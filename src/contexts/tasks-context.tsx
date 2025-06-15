@@ -17,8 +17,21 @@ interface TasksContextProviderProps {
   children: React.ReactNode;
 }
 
+const STORAGE_KEY = "@ignite-todo:tasks";
+
 export function TasksContextProvider({ children }: TasksContextProviderProps) {
-  const [tasks, setTasks] = React.useState<Task[]>([]);
+  const [tasks, setTasks] = React.useState<Task[]>(() => {
+    return getStorageData();
+  });
+
+  function getStorageData() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  }
+
+  function updateStorageData(data: Task[]) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
 
   function createTask(task: Pick<Task, "description">) {
     setTasks((old) => {
@@ -29,24 +42,31 @@ export function TasksContextProvider({ children }: TasksContextProviderProps) {
         description: task.description,
         done: false,
       };
-
-      return [...old, payload];
+      const data = [...old, payload];
+      updateStorageData(data);
+      return data;
     });
   }
 
   function removeTask(taskId: string) {
-    setTasks((old) => old.filter((task) => task.id !== taskId));
+    setTasks((old) => {
+      const data = old.filter((task) => task.id !== taskId);
+      updateStorageData(data);
+      return data;
+    });
   }
 
   function toggleTask(taskId: string) {
     setTasks((old) => {
-      return old.map((task) => {
+      const data = old.map((task) => {
         if (task.id === taskId) {
           return { ...task, done: !task.done };
         }
 
         return task;
       });
+      updateStorageData(data);
+      return data;
     });
   }
 
